@@ -1,10 +1,10 @@
 /* See LICENSE file for copyright and license details. */
 
 /* interval between updates (in ms) */
-const unsigned int interval = 1000;
+const unsigned int interval = 5000;
 
 /* text to show if no value can be retrieved */
-static const char unknown_str[] = "n/a";
+/* static const char unknown_str[] = "n/a"; */
 
 /* maximum output string length */
 #define MAXLEN 2048
@@ -64,6 +64,12 @@ static const char unknown_str[] = "n/a";
  * wifi_perc           WiFi signal in percent          interface name (wlan0)
  */
 static const struct arg args[] = {
-	/* function format          argument */
-	{ datetime, "%s",           "%F %T" },
+	/* function        format                argument */
+	{ run_command,     "%s | ",              "music-statusbar" },
+	{ run_command,     "%s | ",              "volume-statusbar" },
+	/* { wifi_essid,      "%s ",                "wlp5s0" }, */
+	{ wifi_perc,       " %s%% | ",          "wlp5s0" },
+	{ battery_perc,    "%s",                 "BAT0" },
+	{ battery_state,   "%s",                 "BAT0" },
+	{ datetime,        " | %s",              "%a %b %d %I:%M %p" },
 };
