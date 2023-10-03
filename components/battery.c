@@ -50,8 +50,10 @@
 			"󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹",
 		};
 
+		if (cap_perc <= 10) (void)system("battery-statusbar");
+
 		return bprintf("%d%% %s", cap_perc,
-				symbol[cap_perc / 11]);
+				symbol[cap_perc / 10]);
 	}
 
 	const char *
