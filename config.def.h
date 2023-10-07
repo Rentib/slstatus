@@ -71,6 +71,6 @@ static const struct arg args[] = {
 	{ wifi_perc,       " %s%% | ",          "wlp5s0" },
 	{ battery_perc,    "%s",                 "BAT0" },
 	{ battery_state,   "%s",                 "BAT0" },
-	{ datetime,        " |  %s",              "%a %b %d" },
-	{ datetime,        " |  %s",              "%I:%M %p" },
+	{ datetime,        " |  %s",            "%a %b %d" },
+	{ datetime,        " |  %s",            "%I:%M %p" },
 };
