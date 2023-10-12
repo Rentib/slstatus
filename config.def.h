@@ -67,8 +67,8 @@ static const struct arg args[] = {
 	/* function        format                argument */
 	{ run_command,     "%s | ",              "music-statusbar" },
 	{ run_command,     "%s | ",              "volume-statusbar" },
-	/* { wifi_essid,      "%s ",                "wlp5s0" }, */
-	{ wifi_perc,       " %s%% | ",          "wlp5s0" },
+	/* { wifi_essid,      "%s ",                "wlan0" }, */
+	{ wifi_perc,       " %s%% | ",          "wlan0" },
 	{ battery_perc,    "%s",                 "BAT0" },
 	{ battery_state,   "%s",                 "BAT0" },
 	{ datetime,        " |  %s",            "%a %b %d" },
