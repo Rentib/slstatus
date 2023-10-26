@@ -65,12 +65,11 @@ const unsigned int interval = 5000;
  */
 static const struct arg args[] = {
 	/* function        format                argument */
-	{ run_command,     "%s | ",              "music-statusbar" },
-	{ run_command,     "%s | ",              "volume-statusbar" },
+	{ run_command,     "\x06%s |\x05 ",      "music-statusbar" },
+	{ run_command,     "%s |\x04 ",          "volume-statusbar" },
 	/* { wifi_essid,      "%s ",                "wlan0" }, */
-	{ wifi_perc,       " %s%% | ",          "wlan0" },
+	{ wifi_perc,       " %s%% |\x03 ",      "wlp5s0" },
 	{ battery_perc,    "%s",                 "BAT0" },
 	{ battery_state,   "%s",                 "BAT0" },
-	{ datetime,        " |  %s",            "%a %b %d" },
-	{ datetime,        " |  %s",            "%I:%M %p" },
+	{ datetime,        " |\x02 %s",          " %a %b %d |  %I:%M %p" },
 };
