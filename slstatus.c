@@ -58,6 +58,7 @@ main(int argc, char *argv[])
 	ARGBEGIN {
 	case 'v':
 		die("slstatus-"VERSION);
+		return 0; /* no need for return, but it silences a warning */
 	case '1':
 		done = 1;
 		/* FALLTHROUGH */
