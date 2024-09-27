@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "arg.h"
 #include "slstatus.h"
@@ -19,6 +20,8 @@ struct arg {
 };
 
 char buf[1024];
+int pipefd[2];
+
 static volatile sig_atomic_t done;
 
 #include "config.h"
@@ -79,10 +82,12 @@ print_status(int it, int sig)
 static void
 sighandler(const int signo)
 {
-	if (SIGRTMIN <= signo && signo <= SIGRTMAX)
-		print_status(-1, signo - SIGRTMIN);
-	else if (signo != SIGUSR1)
+	if (SIGRTMIN <= signo && signo <= SIGRTMAX) {
+		if (write(pipefd[1], &signo, sizeof(signo)) < 0)
+			die("write:");
+	} else if (signo != SIGUSR1) {
 		done = 1;
+	}
 }
 
 static int
@@ -97,6 +102,8 @@ main(int argc, char *argv[])
 	struct sigaction act;
 	struct timespec start, current, diff, intspec, wait;
 	size_t i, time = 0, interval = 60 * 1000, lcm = interval;
+	fd_set rd;
+	int signo;
 
 	ARGBEGIN {
 	case 'v':
@@ -111,6 +118,9 @@ main(int argc, char *argv[])
 
 	if (argc)
 		usage();
+
+	if (pipe(pipefd) < 0)
+		die("pipe:");
 
 	memset(&act, 0, sizeof(act));
 	act.sa_handler = sighandler;
@@ -138,19 +148,32 @@ main(int argc, char *argv[])
 
 		if (clock_gettime(CLOCK_MONOTONIC, &current) < 0)
 			die("clock_gettime:");
-		difftimespec(&diff, &current, &start);
 
+		difftimespec(&diff, &current, &start);
 		intspec.tv_sec = interval / 1000;
 		intspec.tv_nsec = (interval % 1000) * 1E6;
 		difftimespec(&wait, &intspec, &diff);
 
-		while (!done && wait.tv_sec >= 0) {
-			if (nanosleep(&wait, &wait) == 0)
-				break;
-			if (errno != EINTR)
-				die("nanosleep:");
+sleep:
+		FD_ZERO(&rd);
+		FD_SET(pipefd[0], &rd);
+		if (pselect(pipefd[0] + 1, &rd, NULL, NULL, &wait, NULL) < 0) {
+			if (errno == EINTR)
+				continue;
+			die("pselect:");
+		}
+
+		if (FD_ISSET(pipefd[0], &rd)) {
+			if (read(pipefd[0], &signo, sizeof(signo)) < 0)
+				die("read:");
+			signo -= SIGRTMIN;
+			print_status(-1, signo);
+			goto sleep;
 		}
 	} while (!done);
+
+	close(pipefd[0]);
+	close(pipefd[1]);
 
 	return 0;
 }
