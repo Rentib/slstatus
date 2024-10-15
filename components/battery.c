@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../slstatus.h"
@@ -245,3 +246,14 @@
 		return bprintf("%uh %02um", rem / 60, rem % 60);
 	}
 #endif
+
+const char *battery_icon(const char *bat)
+{
+	const unsigned long perc = strtoul(battery_perc(bat), NULL, 10);
+	const char *state = battery_state(bat);
+	const char *icon = (const char *[]){
+		"󰂎", "󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹",
+	}[perc / 10];
+	const char *charging = !(strcmp(state, "+")) ? " " : "";
+	return bprintf("%lu%% %s%s", perc, icon, charging);
+}
