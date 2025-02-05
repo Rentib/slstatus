@@ -120,8 +120,10 @@ main(int argc, char *argv[])
 		die("sigprocmask:");
 
 	do {
-		if (clock_gettime(CLOCK_MONOTONIC, &start) < 0)
-			die("clock_gettime:");
+		if (clock_gettime(CLOCK_MONOTONIC, &start) < 0) {
+			warn("clock_gettime:");
+			continue;
+		}
 
 		print_status(time, -1);
 		time = (time + interval) % lcm;
@@ -132,8 +134,10 @@ main(int argc, char *argv[])
 			continue;
 
 	sleep:
-		if (clock_gettime(CLOCK_MONOTONIC, &current) < 0)
-			die("clock_gettime:");
+		if (clock_gettime(CLOCK_MONOTONIC, &current) < 0) {
+			warn("clock_gettime:");
+			continue;
+		}
 
 		difftimespec(&diff, &current, &start);
 		intspec.tv_sec = interval / 1000;
@@ -141,11 +145,11 @@ main(int argc, char *argv[])
 		difftimespec(&wait, &intspec, &diff);
 
 		if ((signo = sigtimedwait(&mask, NULL, &wait)) < 0) {
-			if (errno == EAGAIN)
-				continue;
-			else if (errno == EINTR)
+			if (errno == EINTR)
 				goto sleep;
-			die("sigtimedwait:");
+			else if (errno != EAGAIN)
+				warn("sigtimedwait:");
+			continue;
 		} else if (signo == SIGINT || signo == SIGTERM) {
 			done = 1;
 		} else {
