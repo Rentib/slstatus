@@ -13,7 +13,7 @@ CFLAGS   = -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter -Os -Werror
 LDFLAGS  = -s
 # OpenBSD: add -lsndio
 # FreeBSD: add -lkvm -lsndio
-LDLIBS   =
+LDLIBS   = -lmpdclient
 
 # compiler and linker
 CC = cc

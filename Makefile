@@ -16,6 +16,7 @@ COM =\
 	components/ip\
 	components/kernel_release\
 	components/load_avg\
+	components/mpd\
 	components/netspeeds\
 	components/num_files\
 	components/ram\
