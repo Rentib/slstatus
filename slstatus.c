@@ -20,9 +20,6 @@ struct arg {
 };
 
 char buf[1024];
-int pipefd[2];
-
-static volatile sig_atomic_t done;
 
 #include "config.h"
 #define MAXLEN (CMDLEN * LEN(args))
@@ -40,7 +37,7 @@ difftimespec(struct timespec *res, struct timespec *a, struct timespec *b)
 static void
 usage(void)
 {
-	die("usage: %s [-v] [-s] [-1]", argv0);
+	die("usage: %s [-v] [-1]", argv0);
 }
 
 static void
@@ -79,17 +76,6 @@ print_status(int it, int sig)
 		die("puts:");
 }
 
-static void
-sighandler(const int signo)
-{
-	if (SIGRTMIN <= signo && signo <= SIGRTMAX) {
-		if (write(pipefd[1], &signo, sizeof(signo)) < 0)
-			die("write:");
-	} else if (signo != SIGUSR1) {
-		done = 1;
-	}
-}
-
 static int
 gcd(int a, int b)
 {
@@ -99,11 +85,10 @@ gcd(int a, int b)
 int
 main(int argc, char *argv[])
 {
-	struct sigaction act;
 	struct timespec start, current, diff, intspec, wait;
 	size_t i, time = 0, interval = 60 * 1000, lcm = interval;
-	fd_set rd;
-	int signo;
+	int done = 0, signo;
+	sigset_t mask;
 
 	ARGBEGIN {
 	case 'v':
@@ -119,20 +104,20 @@ main(int argc, char *argv[])
 	if (argc)
 		usage();
 
-	if (pipe(pipefd) < 0)
-		die("pipe:");
-
-	memset(&act, 0, sizeof(act));
-	act.sa_handler = sighandler;
-	sigaction(SIGINT,  &act, NULL);
-	sigaction(SIGTERM, &act, NULL);
-
+	if (sigemptyset(&mask) < 0)
+		die("sigemptyset:");
+	if (sigaddset(&mask, SIGINT) < 0 || sigaddset(&mask, SIGTERM) < 0)
+		die("sigaddset:");
 	for (i = 0; i < LEN(args); i++) {
 		interval = gcd(interval, args[i].interval);
 		lcm = lcm / gcd(lcm, interval) * interval;
-		if (args[i].signal != -1)
-			sigaction(args[i].signal + SIGRTMIN, &act, NULL);
+		if (args[i].signal != -1 &&
+		    sigaddset(&mask, args[i].signal + SIGRTMIN) < 0)
+			die("sigaddset:");
 	}
+
+	if (sigprocmask(0, &mask, NULL) < 0)
+		die("sigprocmask:");
 
 	do {
 		if (clock_gettime(CLOCK_MONOTONIC, &start) < 0)
@@ -146,6 +131,7 @@ main(int argc, char *argv[])
 		if (done)
 			continue;
 
+	sleep:
 		if (clock_gettime(CLOCK_MONOTONIC, &current) < 0)
 			die("clock_gettime:");
 
@@ -154,26 +140,19 @@ main(int argc, char *argv[])
 		intspec.tv_nsec = (interval % 1000) * 1E6;
 		difftimespec(&wait, &intspec, &diff);
 
-sleep:
-		FD_ZERO(&rd);
-		FD_SET(pipefd[0], &rd);
-		if (pselect(pipefd[0] + 1, &rd, NULL, NULL, &wait, NULL) < 0) {
-			if (errno == EINTR)
+		if ((signo = sigtimedwait(&mask, NULL, &wait)) < 0) {
+			if (errno == EAGAIN)
 				continue;
-			die("pselect:");
-		}
-
-		if (FD_ISSET(pipefd[0], &rd)) {
-			if (read(pipefd[0], &signo, sizeof(signo)) < 0)
-				die("read:");
-			signo -= SIGRTMIN;
-			print_status(-1, signo);
+			else if (errno == EINTR)
+				goto sleep;
+			die("sigtimedwait:");
+		} else if (signo == SIGINT || signo == SIGTERM) {
+			done = 1;
+		} else {
+			print_status(-1, signo - SIGRTMIN);
 			goto sleep;
 		}
 	} while (!done);
-
-	close(pipefd[0]);
-	close(pipefd[1]);
 
 	return 0;
 }
